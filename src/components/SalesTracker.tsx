@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RotateCcw, DollarSign, Clock, TrendingUp, Users, Package, CheckCircle, Plus, ShoppingCart, Trash2, Edit3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface Sale {
   id: string;
@@ -41,10 +42,10 @@ interface Order {
 const mockSales: Sale[] = [
   {
     id: '1',
-    product: 'Dairy Meal 50kg',
+    product: 'Chick Mash 50kg',
     quantity: 3,
-    unitPrice: 2500,
-    total: 7500,
+    unitPrice: 2800,
+    total: 8400,
     paymentMethod: 'M-Pesa',
     timestamp: new Date(Date.now() - 1000 * 60 * 30),
     customer: 'Grace Wanjiku'
@@ -61,10 +62,10 @@ const mockSales: Sale[] = [
   },
   {
     id: '3',
-    product: 'Pig Finisher 50kg',
+    product: 'Growers Mash 50kg',
     quantity: 1,
-    unitPrice: 2800,
-    total: 2800,
+    unitPrice: 2400,
+    total: 2400,
     paymentMethod: 'Airtel Money',
     timestamp: new Date(Date.now() - 1000 * 60 * 90),
   }
@@ -74,30 +75,30 @@ const mockSales: Sale[] = [
 const mockMpesaTransactions = [
   {
     id: 'MPT' + Date.now(),
-    product: 'Broiler Starter 50kg',
+    product: 'Chick Mash 50kg',
     quantity: 2,
-    unitPrice: 2600,
-    total: 5200,
+    unitPrice: 2800,
+    total: 5600,
     paymentMethod: 'M-Pesa',
     timestamp: new Date(Date.now() - 1000 * 60 * 10),
     customer: 'Mary Njeri'
   },
   {
     id: 'MPT' + (Date.now() + 1),
-    product: 'Fish Meal 25kg',
+    product: 'Layers Mash 50kg',
     quantity: 3,
-    unitPrice: 1800,
-    total: 5400,
+    unitPrice: 2200,
+    total: 6600,
     paymentMethod: 'M-Pesa',
     timestamp: new Date(Date.now() - 1000 * 60 * 5),
     customer: 'Peter Kimani'
   },
   {
     id: 'MPT' + (Date.now() + 2),
-    product: 'Calf Milk Replacer 20kg',
+    product: 'Growers Mash 50kg',
     quantity: 4,
-    unitPrice: 3200,
-    total: 12800,
+    unitPrice: 2400,
+    total: 9600,
     paymentMethod: 'M-Pesa',
     timestamp: new Date(Date.now() - 1000 * 60 * 2),
     customer: 'Sarah Waweru'
@@ -109,8 +110,33 @@ export function SalesTracker() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   
-  // Orders state
-  const [orders, setOrders] = useState<Order[]>([]);
+  // Orders state - persistent for logged-in users
+  const [orders, setOrders] = useState<Order[]>(() => {
+    // Load orders from localStorage for the current user
+    if (typeof window !== 'undefined') {
+      const savedOrders = localStorage.getItem('numeraai_orders');
+      if (savedOrders) {
+        try {
+          const parsedOrders = JSON.parse(savedOrders);
+          // Convert date strings back to Date objects
+          return parsedOrders.map((order: any) => ({
+            ...order,
+            createdAt: new Date(order.createdAt)
+          }));
+        } catch (e) {
+          console.error('Error loading orders:', e);
+        }
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('numeraai_orders', JSON.stringify(orders));
+    }
+  }, [orders]);
+
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
   const [newOrder, setNewOrder] = useState({
     customerName: '',
@@ -119,10 +145,17 @@ export function SalesTracker() {
   });
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [newItem, setNewItem] = useState({
-    product: '',
+    product: 'Chick Mash 50kg', 
     quantity: 1,
-    unitPrice: 0
+    unitPrice: 2800 
   });
+
+  // Main products dropdown options with their prices
+  const mainProducts = [
+    { name: 'Chick Mash 50kg', price: 2800 },
+    { name: 'Layers Mash 50kg', price: 2200 },
+    { name: 'Growers Mash 50kg', price: 2400 }
+  ];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
@@ -177,7 +210,12 @@ export function SalesTracker() {
         total: newItem.quantity * newItem.unitPrice
       };
       setOrderItems(prev => [...prev, item]);
-      setNewItem({ product: '', quantity: 1, unitPrice: 0 });
+      // Reset to defaults
+      setNewItem({
+        product: 'Chick Mash 50kg',
+        quantity: 1,
+        unitPrice: 2800
+      });
     }
   };
 
@@ -192,7 +230,7 @@ export function SalesTracker() {
   const createOrder = () => {
     if (newOrder.customerName && newOrder.customerPhone && orderItems.length > 0) {
       const order: Order = {
-        id: Date.now().toString(),
+        id: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // More unique order ID
         customerName: newOrder.customerName,
         customerPhone: newOrder.customerPhone,
         items: orderItems,
@@ -216,6 +254,10 @@ export function SalesTracker() {
     ));
   };
 
+  const clearCompletedOrders = () => {
+    setOrders(prev => prev.filter(order => order.status !== 'completed'));
+  };
+
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-700';
@@ -225,6 +267,13 @@ export function SalesTracker() {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
+
+  // Calculate order statistics
+  const pendingOrders = orders.filter(order => order.status === 'pending').length;
+  const completedOrders = orders.filter(order => order.status === 'completed').length;
+  const totalOrderValue = orders
+    .filter(order => order.status === 'completed')
+    .reduce((sum, order) => sum + order.totalAmount, 0);
 
   return (
     <div className="p-4 space-y-4">
@@ -361,14 +410,30 @@ export function SalesTracker() {
           <div className="flex justify-between items-center">
             <div>
               <p className="text-sm text-muted-foreground">Manage customer orders</p>
+              <div className="flex gap-4 mt-1">
+                <span className="text-xs text-yellow-600">Pending: {pendingOrders}</span>
+                <span className="text-xs text-green-600">Completed: {completedOrders}</span>
+                <span className="text-xs text-blue-600">Total: {formatCurrency(totalOrderValue)}</span>
+              </div>
             </div>
-            <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  New Order
+            <div className="flex gap-2">
+              {completedOrders > 0 && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={clearCompletedOrders}
+                  className="text-xs"
+                >
+                  Clear Completed
                 </Button>
-              </DialogTrigger>
+              )}
+              <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    New Order
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Create New Order</DialogTitle>
@@ -415,12 +480,28 @@ export function SalesTracker() {
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <Label htmlFor="itemProduct">Product</Label>
-                        <Input
-                          id="itemProduct"
-                          placeholder="Product name"
-                          value={newItem.product}
-                          onChange={(e) => setNewItem(prev => ({ ...prev, product: e.target.value }))}
-                        />
+                        <Select 
+                          value={newItem.product} 
+                          onValueChange={(value) => {
+                            const selectedProduct = mainProducts.find(p => p.name === value);
+                            setNewItem(prev => ({ 
+                              ...prev, 
+                              product: value,
+                              unitPrice: selectedProduct ? selectedProduct.price : prev.unitPrice
+                            }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {mainProducts.map((product) => (
+                              <SelectItem key={product.name} value={product.name}>
+                                {product.name} - {formatCurrency(product.price)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor="itemQuantity">Qty</Label>
@@ -505,7 +586,8 @@ export function SalesTracker() {
                   </div>
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </div>
           </div>
 
           {/* Orders List */}
