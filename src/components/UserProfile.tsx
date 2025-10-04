@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Edit3, Shield, CreditCard, Phone, MapPin, Building, Calendar, Star, Trophy, TrendingUp, CheckCircle, AlertCircle, Wallet, Heart, Smartphone, Plus, LogOut } from 'lucide-react';
+import { User, Edit3, Shield, CreditCard, Phone, MapPin, Building, Calendar, Star, Trophy, TrendingUp, CheckCircle, AlertCircle, Heart, Smartphone, Plus, LogOut } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, Users, Calendar, Target, Lightbulb, Edit2, Save, X, Plus, Receipt, Trash2, Download, DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import { TrendingUp, TrendingDown, BarChart3, Users, Target, Lightbulb, Edit2, Save, X, Plus, Receipt, Trash2, Download, DollarSign } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface Goal {
